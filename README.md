@@ -10,82 +10,27 @@ sudo apt install tmux htop kbd
 
 ## Start automatically at boot
 
-Set `~/.config/tv.conf`
+### Set the config
+```
+cp tv.conf ~/.config/tv.conf`
+```
 
-Set the launcher: `/usr/local/bin/tv-dashboard-start`
+### Create the boot service:
+```
+sudo cp tv-dashboard.service /etc/systemd/system/tv-dashboard.service
+```
 
-```bash
-#!/bin/bash
-set -eu
-
-as_steve() {
-    /usr/sbin/runuser -u steve -- /usr/bin/env -u TMUX HOME=/home/steve TERM=linux TZ=Australia/Sydney "$@"
-}
-
-# Start with an empty config and a temporary session, then load the layout.
-# This also makes config errors visible in the service log.
-if ! as_steve /usr/bin/tmux -L tv has-session -t '=tv' 2>/dev/null; then
-    if ! as_steve /usr/bin/tmux -L tv list-sessions >/dev/null 2>&1; then
-        as_steve /usr/bin/tmux -L tv -f /dev/null \
-            new-session -d -s __tv_startup -x 240 -y 67
-    fi
-    as_steve /usr/bin/tmux -L tv source-file /home/steve/.config/tv.conf
-    as_steve /usr/bin/tmux -L tv has-session -t '=tv'
-    as_steve /usr/bin/tmux -L tv kill-session -t '=__tv_startup' 2>/dev/null || true
-fi
-
-# Replace any previous TV viewer before taking over the dedicated console.
-as_steve /usr/bin/tmux -L tv detach-client -s '=tv' 2>/dev/null || true
-
-# -w keeps the launcher running while the viewer is attached.
-exec /usr/bin/openvt -f -c 8 -s -w -- \
-    /usr/sbin/runuser -u steve -- /usr/bin/env -u TMUX \
-    HOME=/home/steve TERM=linux TZ=Australia/Sydney \
-    /bin/bash -c 'setterm --blank 0 --powersave off --powerdown 0 2>/dev/null || true; exec /usr/bin/tmux -L tv attach-session -t tv'
-EOF
-
+### Set to start on boot
+```
+sudo cp tv-dashboard-start /usr/local/bin/tv-dashboard-start
 sudo chmod 755 /usr/local/bin/tv-dashboard-start
 ```
 
-Create the boot service:
 
+## Restart the dashboard
 ```bash
-sudo tee /etc/systemd/system/tv-dashboard.service >/dev/null <<'EOF'
-[Unit]
-Description=TV tmux dashboard on console 8
-After=systemd-user-sessions.service getty@tty8.service
-Conflicts=getty@tty8.service
-
-[Service]
-Type=simple
-Environment=TZ=Australia/Sydney
-WorkingDirectory=/home/steve
-ExecStart=/usr/local/bin/tv-dashboard-start
-Restart=always
-RestartSec=10
-TimeoutStopSec=10
-
-[Install]
-WantedBy=multi-user.target
-EOF
+sudo systemctl restart tv-dashboard.service
 ```
-
-Hand the current TV display over to the service. This rebuilds the TV panels; the agent's default tmux server stays separate.
-
-```bash
-sudo systemctl stop tv-dashboard.service
-
-tmux -L tv kill-server 2>/dev/null || true
-sudo pkill -t tty8 -x htop || true
-
-sudo systemctl daemon-reload
-sudo systemctl enable --now tv-dashboard.service
-sudo systemctl status tv-dashboard.service --no-pager
-```
-
-The dashboard will now start at boot and reconnect if its viewer exits. A passwordless local login is unnecessary: the service opens console 8 and runs the dashboard as `steve`. The service uses administrative privileges to open the console.
-
-The agent panel waits until the `coding` session exists. It does not automatically launch an agent or restore running processes after reboot.
 
 ## Start or reconnect to the agent
 
@@ -98,10 +43,6 @@ tmux -L default new-session -A -s coding
 Change to your project directory and launch your chosen agent there. The TV picks up the session automatically. Press **Ctrl+b**, then **d** to detach and leave it running.
 
 ## Edit the panels
-
-```bash
-nano ~/.config/tv.conf
-```
 
 Each `new-session` or `split-window` line contains its panel's command. Keep the retry loop around commands that may exit or be unavailable. Keep position targets quoted, for example `-t 'tv:dashboard.{top-left}'`, and use percentage sizes such as `-l 35%`.
 
@@ -203,4 +144,5 @@ The launcher explicitly starts the TV server with `TZ=Australia/Sydney`. If an e
 - [Ubuntu openvt manual](https://manpages.ubuntu.com/manpages/jammy/man1/openvt.1.html)
 - [Ubuntu tmux manual](https://manpages.ubuntu.com/manpages/noble/man1/tmux.1.html)
 - [systemd service documentation](https://www.freedesktop.org/software/systemd/man/latest/systemd.service.html)
+
 
