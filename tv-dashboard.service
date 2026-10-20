@@ -1,0 +1,15 @@
+[Unit]
+Description=TV tmux dashboard on console 8
+After=systemd-user-sessions.service getty@tty8.service
+Conflicts=getty@tty8.service
+
+[Service]
+Type=simple
+Environment=TZ=Australia/Sydney
+ExecStart=/usr/local/bin/tv-dashboard-start
+Restart=always
+RestartSec=10
+TimeoutStopSec=10
+
+[Install]
+WantedBy=multi-user.target
