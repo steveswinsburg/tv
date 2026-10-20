@@ -1,0 +1,86 @@
+#!/bin/bash
+set -eu
+
+TV_USER=steve
+
+if [ "$TV_USER" = root ]; then
+    echo "Choose a regular dashboard user, not root." >&2
+    exit 1
+fi
+
+account=$(getent passwd "$TV_USER") || {
+    echo "Unknown dashboard user: $TV_USER" >&2
+    exit 1
+}
+TV_HOME=$(printf '%s\n' "$account" | cut -d: -f6)
+cd "$TV_HOME"
+
+as_user() {
+    /usr/sbin/runuser -u $TV_USER -- /usr/bin/env -u TMUX HOME=/home/steve TERM=linux TZ=Australia/Sydney "$@"
+}
+
+# Start with an empty config and a temporary session, then load the layout.
+# This also makes config errors visible in the service log.
+if ! as_user /usr/bin/tmux -L tv has-session -t '=tv' 2>/dev/null; then
+    if ! as_user /usr/bin/tmux -L tv list-sessions >/dev/null 2>&1; then
+        as_user /usr/bin/tmux -L tv -f /dev/null \
+            new-session -d -s __tv_startup -x 240 -y 67
+    fi
+    as_user /usr/bin/tmux -L tv source-file "$TV_HOME/.config/tv.conf"
+    as_user /usr/bin/tmux -L tv has-session -t '=tv'
+    as_user /usr/bin/tmux -L tv kill-session -t '=__tv_startup' 2>/dev/null || true
+fi
+
+# Replace any previous TV viewer before taking over the dedicated console.
+as_user /usr/bin/tmux -L tv detach-client -s '=tv' 2>/dev/null || true
+
+# -w keeps the launcher running while the viewer is attached.
+exec /usr/bin/openvt -f -c 8 -s -w -- \
+    /usr/sbin/runuser -u "$TV_USER" -- /usr/bin/env -u TMUX \
+    HOME="$TV_HOME" TERM=linux TZ=Australia/Sydney \
+    /bin/bash -c 'setterm --blank 0 --powersave off --powerdown 0 2>/dev/null || true; exec /usr/bin/tmux -L tv attach-session -t tv'
+
+etc/default/tv-dashboard ]; then
+    . /etc/default/tv-dashboard
+fi
+TV_USER=${TV_USER:-steve}
+
+if [ "$TV_USER" = root ]; then
+    echo "Choose a regular dashboard user, not root." >&2
+    exit 1
+fi
+
+account=$(getent passwd "$TV_USER") || {
+    echo "Unknown dashboard user: $TV_USER" >&2
+    exit 1
+}
+TV_HOME=$(printf '%s\n' "$account" | cut -d: -f6)
+cd "$TV_HOME"
+
+as_user() {
+    /usr/sbin/runuser -u "$TV_USER" -- /usr/bin/env -u TMUX \
+        HOME="$TV_HOME" TERM=linux TZ=Australia/Sydney "$@"
+}
+
+# Start with an empty config and a temporary session, then load the layout.
+# This also makes config errors visible in the service log.
+if ! as_user /usr/bin/tmux -L tv has-session -t '=tv' 2>/dev/null; then
+    if ! as_user /usr/bin/tmux -L tv list-sessions >/dev/null 2>&1; then
+        as_user /usr/bin/tmux -L tv -f /dev/null \
+            new-session -d -s __tv_startup -x 240 -y 67
+    fi
+    as_user /usr/bin/tmux -L tv source-file "$TV_HOME/.config/tv.conf"
+    as_user /usr/bin/tmux -L tv has-session -t '=tv'
+    as_user /usr/bin/tmux -L tv kill-session -t '=__tv_startup' 2>/dev/null || true
+fi
+
+# Replace any previous TV viewer before taking over the dedicated console.
+as_user /usr/bin/tmux -L tv detach-client -s '=tv' 2>/dev/null || true
+
+# -w keeps the launcher running while the viewer is attached.
+exec /usr/bin/openvt -f -c 8 -s -w -- \
+    /usr/sbin/runuser -u "$TV_USER" -- /usr/bin/env -u TMUX \
+    HOME="$TV_HOME" TERM=linux TZ=Australia/Sydney \
+    /bin/bash -c 'setterm --blank 0 --powersave off --powerdown 0 2>/dev/null || true; exec /usr/bin/tmux -L tv attach-session -t tv'
+
+
