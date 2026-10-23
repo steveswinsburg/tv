@@ -53,6 +53,6 @@ exec /usr/bin/openvt -f -c 8 -s -w -- \
     /usr/bin/env -u TMUX \
     HOME="$TV_HOME" TERM=linux TZ=Australia/Sydney \
     /bin/bash -c '
-        setterm --blank 0 --powersave off --powerdown 0 2>/dev/null || true
+        setterm --cursor on --blank 0 --powersave off --powerdown 0 2>/dev/null || true
         exec /usr/bin/tmux -L tv attach-session -t tv
     '
