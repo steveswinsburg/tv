@@ -37,7 +37,7 @@ sudo systemctl restart tv-dashboard.service
 From an ordinary SSH shell:
 
 ```bash
-tmux -L default new-session -A -s coding
+tmux -L default new-session -A -s agent
 ```
 
 Change to your project directory and launch your chosen agent there. The TV picks up the session automatically. Press **Ctrl+b**, then **d** to detach and leave it running.
