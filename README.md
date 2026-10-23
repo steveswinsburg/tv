@@ -15,29 +15,20 @@ sudo apt install tmux htop kbd
 cp tv.conf ~/.config/tv.conf
 ```
 
-### Create the boot service:
+### Setup the service:
 ```
-sudo cp tv-dashboard.service /etc/systemd/system/tv-dashboard.service
-```
-
-### Set to start on boot
-```
-sudo cp tv-dashboard-start /usr/local/bin/tv-dashboard-start
-sudo chmod 755 /usr/local/bin/tv-dashboard-start
-```
-
-
-## Restart the dashboard
-```bash
+sudo install -m 755 tv-dashboard-start /usr/local/bin/tv-dashboard-start
+sudo install -m 644 tv-dashboard.service /etc/systemd/system/tv-dashboard.service
+sudo systemctl daemon-reload
 sudo systemctl restart tv-dashboard.service
 ```
 
-## Start or reconnect to the agent
+## Start or reconnect to a session
 
 From an ordinary SSH shell:
 
 ```bash
-tmux -L default new-session -A -s agent
+tmux -L default new-session -A -s coding
 ```
 
 Change to your project directory and launch your chosen agent there. The TV picks up the session automatically. Press **Ctrl+b**, then **d** to detach and leave it running.
