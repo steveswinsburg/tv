@@ -11,5 +11,9 @@ Restart=always
 RestartSec=10
 TimeoutStopSec=10
 
+# On stop, stop the display
+ExecStopPost=/usr/bin/chvt 8
+ExecStopPost=/bin/sh -c 'TERM=linux /usr/bin/setterm --clear all --cursor off > /dev/tty8'
+
 [Install]
 WantedBy=multi-user.target
