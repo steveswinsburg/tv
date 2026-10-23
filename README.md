@@ -12,7 +12,7 @@ sudo apt install tmux htop kbd
 
 ### Set the config
 ```
-cp tv.conf ~/.config/tv.conf`
+cp tv.conf ~/.config/tv.conf
 ```
 
 ### Create the boot service:
