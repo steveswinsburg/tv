@@ -86,41 +86,6 @@ sudo systemctl disable --now tv-dashboard.service
 
 Viewing the TV layout over SSH uses the same selected TV window and pane. Detach with **Ctrl+b**, then **d**. Use a fresh SSH shell for administrative commands.
 
-## Appearance
-
-Apply continuous green separators immediately:
-
-```bash
-tmux -L tv set -g pane-border-style 'fg=green'
-tmux -L tv set -g pane-active-border-style 'fg=green'
-```
-
-Keep these lines in `~/.config/tv.conf` to preserve the appearance:
-
-```tmux
-set -g pane-border-style "fg=green"
-set -g pane-active-border-style "fg=green"
-set -g status-interval 5
-```
-
-Tmux draws shared panel separators, rather than a complete outside frame.
-
-## Timezone
-
-Check the machine's clock:
-
-```bash
-timedatectl
-```
-
-If needed, set Sydney time:
-
-```bash
-sudo timedatectl set-timezone Australia/Sydney
-```
-
-The launcher explicitly starts the TV server with `TZ=Australia/Sydney`. If an existing server still displays UTC, rebuild the dashboard using the commands under “Edit the panels”; setting a tmux environment variable alone may not update the server process's timezone.
-
 ## Troubleshooting
 
 - **Waiting for coding:** start or reconnect to `tmux -L default new-session -A -s coding`.
