@@ -1,0 +1,109 @@
+#!/bin/bash
+set -eu
+
+history=()
+width=40
+
+draw_graph() {
+    history+=("$1")
+    if [ "${#history[@]}" -gt "$width" ]; then
+        history=("${history[@]:1}")
+    fi
+    printf '%s\n' "${history[@]}" | awk '
+        { value[NR] = $1 }
+        END {
+            for (level = 100; level >= 20; level -= 20) {
+                printf "%3d |", level
+                for (i = 1; i <= NR; i++)
+                    printf "%s", (value[i] >= level - 10 ? "#" : " ")
+                printf "\n"
+            }
+            printf "  0 +"
+            for (i = 1; i <= NR; i++) printf "-"
+            printf "\n"
+        }'
+    printf '      Last %d samples, 2 seconds apart\n' "${#history[@]}"
+}
+
+read_cpu() {
+    local cpu user nice system idle iowait irq softirq steal rest
+    read -r cpu user nice system idle iowait irq softirq steal rest < /proc/stat
+    cpu_total=$((user + nice + system + idle + iowait + irq + softirq + steal))
+    cpu_idle=$((idle + iowait))
+}
+
+case "${1:-}" in
+    cpu)
+        read_cpu
+        while :; do
+            previous_total=$cpu_total
+            previous_idle=$cpu_idle
+            sleep 2
+            read_cpu
+            elapsed=$((cpu_total - previous_total))
+            if [ "$elapsed" -le 0 ]; then
+                printf 'CPU counters did not advance\n' >&2
+                exit 1
+            fi
+            percent=$((100 * (elapsed - cpu_idle + previous_idle) / elapsed))
+            printf '\033[H\033[2JCPU USAGE: %d%% (all cores)\n\n' "$percent"
+            draw_graph "$percent"
+            printf '\nLoad averages (1 / 5 / 15 minutes)\n'
+            read -r load1 load5 load15 rest < /proc/loadavg
+            printf '%s / %s / %s\n' "$load1" "$load5" "$load15"
+        done
+        ;;
+    memory)
+        while :; do
+            read -r total available swap_total swap_free < <(
+                awk '
+                    /^MemTotal:/ { total = $2 }
+                    /^MemAvailable:/ { available = $2; found = 1 }
+                    /^SwapTotal:/ { swap_total = $2 }
+                    /^SwapFree:/ { swap_free = $2 }
+                    END {
+                        if (!total || !found) {
+                            print "Memory totals or MemAvailable missing from /proc/meminfo" > "/dev/stderr"
+                            exit 1
+                        }
+                        print total, available, swap_total, swap_free
+                    }' /proc/meminfo
+            )
+            used=$((total - available))
+            percent=$((100 * used / total))
+            printf '\033[H\033[2JMEMORY USAGE: %d%%\n\n' "$percent"
+            draw_graph "$percent"
+            awk -v used="$used" -v total="$total" -v available="$available" \
+                -v swap_total="$swap_total" -v swap_free="$swap_free" 'BEGIN {
+                    printf "\nUsed:      %.2f / %.2f GiB\n", used / 1048576, total / 1048576
+                    printf "Available: %.2f GiB\n", available / 1048576
+                    printf "Swap:      %.2f / %.2f GiB\n", (swap_total - swap_free) / 1048576, swap_total / 1048576
+                }'
+            sleep 2
+        done
+        ;;
+    storage)
+        while :; do
+            # Capture first so df failures cannot be hidden by the formatter.
+            disks=$(df -Pk -x tmpfs -x devtmpfs -x squashfs)
+            printf '\033[H\033[2JSTORAGE USAGE\n\n'
+            printf '%s\n' "$disks" | awk '
+                NR > 1 {
+                    mount = $6
+                    for (i = 7; i <= NF; i++) mount = mount " " $i
+                    printf "%s\n", mount
+                    percent = $5 + 0
+                    printf "["
+                    for (i = 1; i <= 30; i++)
+                        printf "%s", (i <= percent * 30 / 100 ? "#" : "-")
+                    printf "] %s\n", $5
+                    printf "%.1f / %.1f GiB used, %.1f GiB free\n\n", $3 / 1048576, $2 / 1048576, $4 / 1048576
+                }'
+            sleep 15
+        done
+        ;;
+    *)
+        printf 'Usage: %s {cpu|memory|storage}\n' "$0" >&2
+        exit 1
+        ;;
+esac
