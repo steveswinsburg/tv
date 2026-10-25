@@ -44,9 +44,9 @@ The default layout keeps the agent on the left, with three compact panels in the
 
 CPU and memory graphs retain 40 samples, taken every two seconds (about 80 seconds). They use ASCII characters and work on a headless Ubuntu Linux console without a graphical desktop or extra monitoring packages. History starts fresh when a panel restarts. Storage refreshes every 15 seconds.
 
-System warnings and network/uptime remain below the agent. The commented sections at the end of `tv.conf` provide optional **services**, **Docker containers**, **temperatures**, and **application logs**. Uncomment both lines for a section to enable it, then configure its command. Extra panels reduce the space available to the agent.
+System warnings and network/uptime remain below the agent. The network panel refreshes every five seconds, showing uptime and each active global-scope IPv4/IPv6 address on its own line, labelled by interface. Loopback/link-local addresses and wide traffic-counter tables are omitted. The commented sections at the end of `tv.conf` provide optional **services**, **Docker containers**, **temperatures**, and **application logs**. Uncomment both lines for a section to enable it, then configure its command. Extra panels reduce the space available to the agent.
 
-The CPU, memory and storage commands live in `tv-panel`, which reads Linux `/proc` counters and `df`. Reinstall it after editing it:
+The CPU, memory, storage and network commands live in `tv-panel`, which uses Linux `/proc` counters, `df`, `ip` and `uptime`. Reinstall it after editing it:
 
 ```bash
 sudo install -m 755 tv-panel /usr/local/bin/tv-panel
@@ -118,4 +118,3 @@ Viewing the TV layout over SSH uses the same selected TV window and pane. Detach
 - [Ubuntu openvt manual](https://manpages.ubuntu.com/manpages/jammy/man1/openvt.1.html)
 - [Ubuntu tmux manual](https://manpages.ubuntu.com/manpages/noble/man1/tmux.1.html)
 - [systemd service documentation](https://www.freedesktop.org/software/systemd/man/latest/systemd.service.html)
-
