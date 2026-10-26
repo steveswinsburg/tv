@@ -102,8 +102,24 @@ case "${1:-}" in
             sleep 15
         done
         ;;
+    network)
+        while :; do
+            addresses=$(ip -o address show up scope global)
+            printf '\033[H\033[2J'
+            uptime -p
+            printf '\nIP ADDRESSES (active, global scope)\n\n'
+            if [ -n "$addresses" ]; then
+                printf '%s\n' "$addresses" | awk '{
+                    printf "%s (%s)\n  %s\n", $2, $3, $4
+                }'
+            else
+                printf 'No active global IP addresses\n'
+            fi
+            sleep 5
+        done
+        ;;
     *)
-        printf 'Usage: %s {cpu|memory|storage}\n' "$0" >&2
+        printf 'Usage: %s {cpu|memory|storage|network}\n' "$0" >&2
         exit 1
         ;;
 esac
